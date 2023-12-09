@@ -44,7 +44,7 @@ bot.on("messageCreate", async (msg) => {
         }
     } catch (err) {
         console.error(err);
-        await msg.reply({
+        await msg.channel.send({
             content: `An error occurred:\n\`\`\`\n${err}\n\`\`\``,
             allowedMentions: {
                 repliedUser: false,

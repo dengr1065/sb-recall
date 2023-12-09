@@ -1,6 +1,6 @@
 {
     "name": "sb-recall",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A ShapeBot extension for storing reusable messages.",
     "main": "src/index.js",
     "author": "dengr1065",
