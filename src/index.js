@@ -24,11 +24,15 @@ bot.on("messageCreate", async (msg) => {
 
     try {
         switch (command) {
-            case "=store": {
+            case "=store":
+            case "=save": {
                 await storeMessage(msg, data);
                 break;
             }
-            case "=delete": {
+            case "=delete":
+            case "=remove":
+            case "=del":
+            case "=rm": {
                 await deleteMessage(msg, data);
                 break;
             }
