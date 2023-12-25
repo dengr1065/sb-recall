@@ -13,7 +13,7 @@ await sql`
         content TEXT NOT NULL,
         user_id NUMERIC,
         created TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        UNIQUE (name, user_id)
+        UNIQUE NULLS NOT DISTINCT (name, user_id)
     );
 `;
 
