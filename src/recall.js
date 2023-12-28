@@ -21,12 +21,7 @@ export async function storeMessage(msg, data) {
         );
     `;
 
-    await msg.reply({
-        content: `${isUser ? "User" : "Global"} message saved as ${messageName}.`,
-        allowedMentions: {
-            repliedUser: false,
-        },
-    });
+    await msg.react("✅");
 }
 
 /** @type {BotCommand} */
@@ -56,12 +51,7 @@ export async function deleteMessage(msg, data) {
         return;
     }
 
-    await msg.reply({
-        content: `${isUser ? "User" : "Global"} message \`${messageName}\` deleted.`,
-        allowedMentions: {
-            repliedUser: false,
-        },
-    });
+    await msg.react("✅");
 }
 
 /** @type {BotCommand} */
@@ -113,7 +103,7 @@ export async function recallMessage(msg, data) {
         reference = await msg.fetchReference();
     } catch {
         // Send the message without replying
-     }
+    }
 
     if (msg.deletable) {
         await msg.delete();
