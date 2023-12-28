@@ -2,34 +2,6 @@ import { PermissionFlagsBits } from "discord.js";
 import { getAvailableMessages, getMessage, sql } from "./database.js";
 
 /** @type {BotCommand} */
-export async function sendMessage(msg, data) {
-    const message = await getMessage(data, msg.author.id);
-    if (message === null) {
-        return;
-    }
-
-    /** @type {import("discord.js").Message | null} */
-    let reference = null;
-    try {
-        reference = await msg.fetchReference();
-    } catch {}
-
-    if (msg.deletable) {
-        await msg.delete();
-    }
-
-    if (reference) {
-        await reference.reply({
-            content: message.content,
-        });
-    } else {
-        await msg.channel.send({
-            content: message.content,
-        });
-    }
-}
-
-/** @type {BotCommand} */
 export async function storeMessage(msg, data) {
     if (!canModify(msg.member)) {
         return;
@@ -126,6 +98,36 @@ export async function listMessages(msg, data) {
             repliedUser: false,
         },
     });
+}
+
+/** @type {BotCommand} */
+export async function recallMessage(msg, data) {
+    const message = await getMessage(data, msg.author.id);
+    if (message === null) {
+        return;
+    }
+
+    /** @type {import("discord.js").Message | null} */
+    let reference = null;
+    try {
+        reference = await msg.fetchReference();
+    } catch {
+        // Send the message without replying
+     }
+
+    if (msg.deletable) {
+        await msg.delete();
+    }
+
+    if (reference) {
+        await reference.reply({
+            content: message.content,
+        });
+    } else {
+        await msg.channel.send({
+            content: message.content,
+        });
+    }
 }
 
 /**

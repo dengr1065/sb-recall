@@ -1,6 +1,6 @@
-import { Client, GatewayIntentBits, MessageMentions } from "discord.js";
+import { Client, GatewayIntentBits } from "discord.js";
 import { discordToken } from "./config.js";
-import { deleteMessage, listMessages, sendMessage, storeMessage } from "./handler.js";
+import { deleteMessage, listMessages, recallMessage, storeMessage } from "./recall.js";
 
 const bot = new Client({
     intents: [
@@ -43,7 +43,7 @@ bot.on("messageCreate", async (msg) => {
             default: {
                 // Used to handle cases like =message-name
                 const fullData = command.slice(1) + " " + (data ?? "");
-                await sendMessage(msg, fullData.trim());
+                await recallMessage(msg, fullData.trim());
             }
         }
     } catch (err) {
