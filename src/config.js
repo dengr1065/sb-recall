@@ -1,13 +1,23 @@
-import { configDotenv } from "dotenv";
+import postgres from "postgres";
 
-configDotenv();
-if (["DISCORD_TOKEN", "DATABASE_SOCKET"].some((k) => !(k in process.env))) {
-    process.exitCode = 1;
-    throw new Error("Missing DISCORD_TOKEN or DATABASE_SOCKET");
+if (!Object.hasOwn(process.env, "DISCORD_TOKEN")) {
+    throw new Error("Missing DISCORD_TOKEN environment variable");
 }
 
 /** @type {string} */
 export const discordToken = process.env.DISCORD_TOKEN;
 
-/** @type {string} */
-export const databaseSocket = process.env.DATABASE_SOCKET;
+export function setupPostgres() {
+    if (typeof process.env["DATABASE_URL"] === "string") {
+        return postgres(process.env.DATABASE_URL);
+    }
+
+    if (typeof process.env["DATABASE_SOCKET"] === "string") {
+        return postgres({
+            path: process.env.DATABASE_SOCKET,
+            database: "shapebot-recall",
+        });
+    }
+
+    throw new Error("Missing DATABASE_URL or DATABASE_SOCKET");
+}

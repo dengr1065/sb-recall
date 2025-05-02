@@ -1,10 +1,6 @@
-import postgres from "postgres";
+import { setupPostgres } from "./config.js";
 
-export const sql = postgres({
-    path: process.env.DATABASE_SOCKET,
-    user: "shapez",
-    database: "shapebot-recall",
-});
+export const sql = setupPostgres();
 
 await sql`
     CREATE TABLE IF NOT EXISTS messages (
