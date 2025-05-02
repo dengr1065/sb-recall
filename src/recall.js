@@ -1,6 +1,8 @@
 import { PermissionFlagsBits } from "discord.js";
 import { getAvailableMessages, getMessage, sql } from "./database.js";
 
+const forwardPrefix = " ";
+
 /** @type {BotCommand} */
 export async function storeMessage(msg, data) {
     if (!canModify(msg.member)) {
@@ -8,15 +10,22 @@ export async function storeMessage(msg, data) {
     }
 
     const isUser = data.startsWith("user ");
-    const messageName = isUser ? data.slice(5).trim() : data;
+    data = isUser ? data.slice(5).trim() : data;
 
+    const asForwarded = data.startsWith("fwd ");
+    data = asForwarded ? data.slice(4).trim() : data;
+
+    // Hack: use a special format to denote messages that should be forwarded
     const referencedMessage = await msg.fetchReference();
+    const content = asForwarded
+        ? `${forwardPrefix}${referencedMessage.channelId}:${referencedMessage.id}`
+        : referencedMessage.content;
 
     await sql`
         INSERT INTO messages (name, content, user_id)
         VALUES(
-            ${messageName},
-            ${referencedMessage.content},
+            ${data},
+            ${content},
             ${isUser ? msg.author.id : null}
         );
     `;
@@ -92,18 +101,20 @@ export async function listMessages(msg, data) {
 
 /** @type {BotCommand} */
 export async function recallMessage(msg, data) {
+    if (!msg.channel.isSendable()) {
+        return;
+    }
+
     const message = await getMessage(data, msg.author.id);
     if (message === null) {
         return;
     }
 
+    // Forwarded messages cannot be sent as replies to other messages
+    const forwarded = isForwardedMessage(message.content);
+
     /** @type {import("discord.js").Message | null} */
-    let reference = null;
-    try {
-        reference = await msg.fetchReference();
-    } catch {
-        // Send the message without replying
-    }
+    const reference = forwarded ? null : await msg.fetchReference().catch(() => null);
 
     if (msg.deletable) {
         await msg.delete();
@@ -114,9 +125,8 @@ export async function recallMessage(msg, data) {
             content: message.content,
         });
     } else {
-        await msg.channel.send({
-            content: message.content,
-        });
+        const options = getMessageCreateOptions(message.content);
+        await msg.channel.send(options);
     }
 }
 
@@ -133,4 +143,30 @@ function canModify(member) {
  */
 function formatMessageList(title, messages) {
     return `\n${title}: ${messages.map((m) => `\`${m.name}\``).join(", ")}`;
+}
+
+/**
+ * @param {string} recallText
+ * @returns {import("discord.js").MessageCreateOptions}
+ */
+function getMessageCreateOptions(recallText) {
+    if (isForwardedMessage(recallText)) {
+        const [channelId, messageId] = recallText.slice(forwardPrefix.length).split(":");
+        return {
+            forward: {
+                channel: channelId,
+                message: messageId,
+            },
+        };
+    }
+
+    return { content: recallText };
+}
+
+/**
+ * Checks if a message should be forwarded
+ * @param {string} recallText
+ */
+function isForwardedMessage(recallText) {
+    return recallText.startsWith(forwardPrefix);
 }
