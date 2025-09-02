@@ -35,11 +35,12 @@ export async function storeMessage(msg, data) {
 
 /** @type {BotCommand} */
 export async function deleteMessage(msg, data) {
-    if (!canModify(msg.member)) {
+    // All users can save messages for their own usage
+    const isUser = data.startsWith("user ");
+    if (!canModify(msg.member) && !isUser) {
         return;
     }
 
-    const isUser = data.startsWith("user ");
     const messageName = isUser ? data.slice(5).trim() : data;
 
     const result = await sql`
