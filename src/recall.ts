@@ -1,16 +1,20 @@
-import { PermissionFlagsBits } from "discord.js";
+import {
+    GuildMember,
+    Message,
+    PermissionFlagsBits,
+    type MessageCreateOptions,
+} from "discord.js";
 import { getAvailableMessages, getMessage, sql } from "./database.js";
 
 const forwardPrefix = " ";
 
-/** @type {BotCommand} */
-export async function storeMessage(msg, data) {
-    if (!canModify(msg.member)) {
+export async function storeMessage(msg: Message, data: string) {
+    if (!canModify(msg.member!, data)) {
         return;
     }
 
     const isUser = data.startsWith("user ");
-    data = isUser ? data.slice(5).trim() : data;
+    data = stripUserPrefix(data);
 
     const asForwarded = data.startsWith("fwd ");
     data = asForwarded ? data.slice(4).trim() : data;
@@ -33,15 +37,13 @@ export async function storeMessage(msg, data) {
     await msg.react("✅");
 }
 
-/** @type {BotCommand} */
-export async function deleteMessage(msg, data) {
-    // All users can save messages for their own usage
-    const isUser = data.startsWith("user ");
-    if (!canModify(msg.member) && !isUser) {
+export async function deleteMessage(msg: Message, data: string) {
+    if (!canModify(msg.member!, data)) {
         return;
     }
 
-    const messageName = isUser ? data.slice(5).trim() : data;
+    const isUser = data.startsWith("user ");
+    const messageName = stripUserPrefix(data);
 
     const result = await sql`
         DELETE FROM messages
@@ -64,17 +66,13 @@ export async function deleteMessage(msg, data) {
     await msg.react("✅");
 }
 
-/** @type {BotCommand} */
-export async function listMessages(msg, data) {
+export async function listMessages(msg: Message, data: string | null) {
     if (data !== null && !["global", "user"].includes(data)) {
         return;
     }
 
-    /** @type {RecallMessage[]} */
-    const globalMessages = [];
-
-    /** @type {RecallMessage[]} */
-    const userMessages = [];
+    const globalMessages: RecallMessage[] = [];
+    const userMessages: RecallMessage[] = [];
 
     const allMessages = await getAvailableMessages(msg.author.id);
     for (const message of allMessages) {
@@ -82,7 +80,7 @@ export async function listMessages(msg, data) {
         group.push(message);
     }
 
-    let content = `**Available messages for \`${msg.member.displayName}\`**`;
+    let content = `**Available messages for \`${msg.member!.displayName}\`**`;
 
     if (data !== "user" && globalMessages.length > 0) {
         content += formatMessageList("Global messages", globalMessages);
@@ -100,8 +98,7 @@ export async function listMessages(msg, data) {
     });
 }
 
-/** @type {BotCommand} */
-export async function recallMessage(msg, data) {
+export async function recallMessage(msg: Message, data: string) {
     if (!msg.channel.isSendable()) {
         return;
     }
@@ -113,8 +110,6 @@ export async function recallMessage(msg, data) {
 
     // Forwarded messages cannot be sent as replies to other messages
     const forwarded = isForwardedMessage(message.content);
-
-    /** @type {import("discord.js").Message | null} */
     const reference = forwarded ? null : await msg.fetchReference().catch(() => null);
 
     if (msg.deletable) {
@@ -131,26 +126,20 @@ export async function recallMessage(msg, data) {
     }
 }
 
-/**
- * @param {import("discord.js").GuildMember} member
- */
-function canModify(member) {
+function canModify(member: GuildMember, recallText: string) {
+    if (recallText.startsWith("user ")) {
+        // Users can always manage personal messages
+        return true;
+    }
+
     return member.permissions.has(PermissionFlagsBits.ManageMessages, true);
 }
 
-/**
- * @param {string} title Title of the list
- * @param {RecallMessage[]} messages Messages to include
- */
-function formatMessageList(title, messages) {
+function formatMessageList(title: string, messages: RecallMessage[]) {
     return `\n${title}: ${messages.map((m) => `\`${m.name}\``).join(", ")}`;
 }
 
-/**
- * @param {string} recallText
- * @returns {import("discord.js").MessageCreateOptions}
- */
-function getMessageCreateOptions(recallText) {
+function getMessageCreateOptions(recallText: string): MessageCreateOptions {
     if (isForwardedMessage(recallText)) {
         const [channelId, messageId] = recallText.slice(forwardPrefix.length).split(":");
         return {
@@ -164,10 +153,17 @@ function getMessageCreateOptions(recallText) {
     return { content: recallText };
 }
 
+function stripUserPrefix(recallText: string): string {
+    if (recallText.startsWith("user ")) {
+        return recallText.slice(5).trim();
+    }
+
+    return recallText;
+}
+
 /**
  * Checks if a message should be forwarded
- * @param {string} recallText
  */
-function isForwardedMessage(recallText) {
+function isForwardedMessage(recallText: string) {
     return recallText.startsWith(forwardPrefix);
 }
