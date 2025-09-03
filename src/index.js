@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits } from "discord.js";
 import { discordToken } from "./config.js";
-import { deleteMessage, listMessages, recallMessage, storeMessage } from "./recall.js";
+import { deleteMessage, listMessages, recallMessage, storeMessage } from "./recall.ts";
 
 const bot = new Client({
     intents: [
