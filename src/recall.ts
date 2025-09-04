@@ -4,6 +4,7 @@ import {
     PermissionFlagsBits,
     type MessageCreateOptions,
 } from "discord.js";
+import { allowedGuilds } from "./config.js";
 import { getAvailableMessages, getMessage, sql } from "./database.js";
 
 const forwardPrefix = " ";
@@ -130,6 +131,12 @@ function canModify(member: GuildMember, recallText: string) {
     if (recallText.startsWith("user ")) {
         // Users can always manage personal messages
         return true;
+    }
+
+    if (!allowedGuilds.includes(member.guild.id)) {
+        // For global messages, the member permissions are only
+        // considered if the guild is explicitly allowed
+        return false;
     }
 
     return member.permissions.has(PermissionFlagsBits.ManageMessages, true);

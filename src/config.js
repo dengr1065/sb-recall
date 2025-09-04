@@ -7,6 +7,9 @@ if (!Object.hasOwn(process.env, "DISCORD_TOKEN")) {
 /** @type {string} */
 export const discordToken = process.env.DISCORD_TOKEN;
 
+/** @type {string[]} */
+export const allowedGuilds = process.env.ALLOWED_GUILDS?.split(",") ?? [];
+
 export function setupPostgres() {
     if (typeof process.env["DATABASE_URL"] === "string") {
         return postgres(process.env.DATABASE_URL);
